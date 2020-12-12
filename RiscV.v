@@ -32,13 +32,13 @@ module RiscV(
 	output mem_writeBack
     );
 
-initial begin
+
 	reg[31:0] if_id;  //初始化
 
 	reg[31:0] id_ex0;
 	reg[31:0] id_ex1;
 	reg[7:0] id_ex_control;
-end
+
 IF IF0(			//暂时无分支跳转指令
 	clk(clk),
 	res_n(res_n),

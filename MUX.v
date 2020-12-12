@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 2020/12/05 09:15:03
+// Create Date: 2020/12/09 18:41:40
 // Design Name: 
-// Module Name: InstructionMem
+// Module Name: MUX
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,22 +20,26 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module InstructionMem(
+module MUX(
 	input clk,
 	input res_n,
-	input[7:0] i_addr,
-	output[31:0] i_data
+	input[31:0] input_data0,
+	input[31:0] input_data1,
+	input input_control,
+	output reg[31:0] output_data
     );
-reg[7:0] instruction_mem[0:255];  //以字节为单位
 
-initial $readmemh ("Instuction.data", InstuctionMem);
-
-always @ (posedge clk or negedge res_n) begin
+always @ (posedge clk or negedge res_n)begin
 	if(~res_n)begin
-		i_data <= 32'h0000_0000;
+		output_data[31:0] <= 32'h0000_0000;
 	end
 	else begin
-		i_data <= {instruction_mem[i_addr],instruction_mem[i_addr+1],instruction_mem[i_addr+2],instruction_mem[i_addr+3]};
+		if(input_control)begin
+			output_data[31:0] <= input_data1;
+		end
+		else begin
+			output_data[31:0] <= input_data0;
+		end
 	end
 end
 endmodule
