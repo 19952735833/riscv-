@@ -42,7 +42,7 @@
 
 #### 3.1总体五级流水线数据通路
 
-![](/Users/albertlin/Downloads/img/7E9A78D550397C7FCEE4F8EC96C9109D.png)
+![](./img/7E9A78D550397C7FCEE4F8EC96C9109D.png)
 
 #### 3.2参考书上数据通路id模块，控制器模块
 
