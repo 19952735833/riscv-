@@ -21,21 +21,18 @@
 
 
 module InstructionMem(
-	input clk,
-	input res_n,
-	input[7:0] i_addr,
-	output[31:0] i_data
+    input rst_n, 
+	input[31:0] i_addr,
+	output reg[31:0] i_data
     );
-reg[7:0] instruction_mem[0:255];  //浠ュ瓧鑺備负鍗曚綅
+reg[7:0] instruction_mem[0:63];  //wire 类型 ？？？ 还是reg
+initial $readmemh ("instuction.data", instruction_mem);
 
-initial $readmemh ("Instuction.data", InstuctionMem);
+always @(*)begin
+    if(~rst_n)
+        i_data <= {32{1'b0}};
+    else
+        i_data <= {instruction_mem[i_addr],instruction_mem[i_addr+1],instruction_mem[i_addr+2],instruction_mem[i_addr+3]}; 
+end 
 
-always @ (posedge clk or negedge res_n) begin
-	if(~res_n)begin
-		i_data <= 32'h0000_0000;
-	end
-	else begin
-		i_data <= {instruction_mem[i_addr],instruction_mem[i_addr+1],instruction_mem[i_addr+2],instruction_mem[i_addr+3]};
-	end
-end
 endmodule

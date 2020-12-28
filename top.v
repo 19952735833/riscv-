@@ -19,11 +19,11 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-//每20ps翻转一次  100ps重置
-//top方法，设置时钟
+//�?20ps翻转�?�?  100ps重置
+//top方法，设置时�?
 
-//标准：module 有关联的使用驼峰式命名，并列的使用’_‘连接
-//		实例统一用 module名加阿拉伯数字
+//标准：module 有关联的使用驼峰式命名，并列的使用�?�_‘连�?
+//		实例统一�? module名加阿拉伯数�?
 module top(
 	
     );
@@ -34,14 +34,14 @@ reg rst_n;
 
 initial begin
 	clk = 1'b0;
-	rst_n = 1'b1;
-	#100
 	rst_n = 1'b0;
+	#40
+	rst_n = 1'b1;
 end
 
 always #20 clk = ~clk;
 
-RiscV_iMem_dMem RiscV_iMem_dMem0(
+Riscv Riscv0(
 	.clk(clk),
 	.rst_n(rst_n)	
 );

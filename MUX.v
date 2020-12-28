@@ -21,16 +21,15 @@
 
 
 module MUX(
-	input clk,
-	input res_n,
+	input rst_n,
 	input[31:0] input_data0,
 	input[31:0] input_data1,
 	input input_control,
 	output reg[31:0] output_data
     );
-
-always @ (posedge clk or negedge res_n)begin
-	if(~res_n)begin
+//reg[31:0] output_data_copy;
+always @ (*)begin
+	if(~rst_n)begin
 		output_data[31:0] <= 32'h0000_0000;
 	end
 	else begin
@@ -42,4 +41,5 @@ always @ (posedge clk or negedge res_n)begin
 		end
 	end
 end
+//assign output_data = output_data_copy;
 endmodule

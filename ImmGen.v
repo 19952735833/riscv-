@@ -21,28 +21,32 @@
 
 
 module ImmGen(
-	input clk,
-	input res_n,
+	input rst_n,
 	input[31:0] instruction,
-	input[7:0] control,
-	output reg[31:0] imm
+	input[6:0] control,
+	output[31:0] imm
     );
-always @(posedge clk or negedge res_n)begin
-	if(~res_n)begin
-		imm[31:0] <= 32'h0000_0000;
+reg[31:0] imm_copy;
+always @(*)begin
+	if(~rst_n)begin
+		imm_copy[31:0] <= 32'h0000_0000;
 	end
 	else begin
 		case(control)
-			8'b00000000: begin
-				imm[31:0] <= {{21{instruction[31]}}, instruction[30:20]};
+		    7'b0110011: begin
+		        imm_copy <= 32'h0000_0000;
+		    end
+			7'b0000011: begin
+				imm_copy[31:0] <= {{21{instruction[31]}}, instruction[30:20]};
 			end
-			8'b00001000: begin
-				imm[31:0] <= {{21{instruction[31]}}, instruction[30:25],instruction[11:7]};
+			7'b0100011: begin
+				imm_copy[31:0] <= {{21{instruction[31]}}, instruction[30:25],instruction[11:7]};
 			end
-			8'b00011000: begin   // branch    书上说 12 ： 0   是不是左移后的？
-				imm[31:0] <= {{21{instruction[31]}}, instruction[7],instruction[30:25],instruction[11:8]};
+			7'b1100011: begin   // branch    书上�? 12 �? 0   是不是左移后的？
+				imm_copy[31:0] <= {{19{instruction[31]}}, instruction[7],instruction[30:25],instruction[11:8],{2'b00}};
 			end
 		endcase
 	end
 end
+assign imm = imm_copy;
 endmodule

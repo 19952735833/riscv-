@@ -19,78 +19,140 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 // 实现ALU ，其他功能使用子模块
-// 需要标志寄存器   如溢出，0标志位    //标志寄存器作用域就在 EX 阶段
+// �?要标志寄存器   如溢出，0标志�?    //标志寄存器作用域就在 EX 阶段
 
 module EX(
-	input clk,
-	input res_n,
+	input rst_n,
 	input[31:0] input_reg0,
 	input[31:0] input_reg1,
 	input[31:0] input_imm,
 	input[7:0] input_control,
 	input[3:0] input_ALU_control,
 	input[31:0] input_pc,
-	output reg[7:0] ex_mem_control,
-	output reg[31:0] ex_mem_pc,
-	output reg[31:0] ex_mem_ALU_result,
-	output reg[31:0] ex_mem_write_data,
-	output reg zero_flag
+	input input_pro_control,
+	input[4:0] input_reg0_addr,
+	input[4:0] input_reg1_addr,
+	input[4:0] input_reg_addr,
+	input[4:0] input_expro_addr,
+	input[4:0] input_mempro_addr,
+	input[31:0] input_expro_data,
+	input[31:0] input_mempro_data,
+	output[4:0] t_mem_reg_addr,
+	output[7:0] t_mem_control,
+	output[31:0] t_mem_pc,
+	output[31:0] t_mem_ALU_result,
+	output[31:0] t_mem_write_data,
+	output zero_flag,
+	output reg pc_stop
     );
 
-    reg[31:0] read_MUX;	// read from MUX
-    reg[3:0] ALU_control;	//这个是翻译过来的ALU_control
+    wire[31:0] read_MUX;	// read from MUX
+    wire[3:0] ALU_control;	//这个是翻译过来的ALU_control
     reg zero_reg;  //零标志寄存器
-
-MUX MUX1(		//指令少，必要性不大
-	clk(clk),
-	res_n(res_n),
-	input_data0(input_reg1),
-	input_data1(input_imm),	
-	input_control(input_control[7]),
-	output_data(read_MUX),
+    reg[4:0] t_mem_reg_addr_copy;
+    reg[7:0] t_mem_control_copy;
+    reg[31:0] t_mem_pc_copy;
+    reg[31:0] t_mem_ALU_result_copy;
+    reg[31:0] t_mem_write_data_copy;
+        
+    wire[31:0] read_MUX0;
+    wire[31:0] read_MUX1;
+    wire output_stop0;
+    wire output_stop1;
+    
+MUX_EX MUX_EX0(
+    .rst_n(rst_n),
+    .input_addr(input_reg0_addr),
+    .input_expro_addr(input_expro_addr),
+    .input_mempro_addr(input_mempro_addr),
+    .input_data(input_reg0),
+    .input_expro_data(input_expro_data),  
+    .input_mempro_data(input_mempro_data),  
+    .input_control(input_pro_control),
+    .output_data(read_MUX0),
+    .output_stop(output_stop0)
+);
+MUX_EX MUX_EX1(
+    .rst_n(rst_n),
+    .input_addr(input_reg1_addr),
+    .input_expro_addr(input_expro_addr),
+    .input_mempro_addr(input_mempro_addr),
+    .input_data(input_reg1),
+    .input_expro_data(input_expro_data),  
+    .input_mempro_data(input_mempro_data),  
+    .input_control(input_pro_control),
+    .output_data(read_MUX1),
+    .output_stop(output_stop1)
+    );
+MUX MUX1(		//指令少，必要性不�?
+	.rst_n(rst_n),
+	.input_data0(read_MUX1),
+	.input_data1(input_imm),	
+	.input_control(input_control[7]),
+	.output_data(read_MUX)
 );
 
-ALU_Control(
-	clk(clk),
-	res_n(res_n),
-	input_data(input_ALU_control),
-	input_control(input_control[1:0]),
-	output_data(ALU_control)
+ALU_Control ALU_Control0(
+	.rst_n(rst_n),
+	.input_data(input_ALU_control),
+	.input_control(input_control[1:0]),
+	.output_data(ALU_control)
 );
 
-always @ (posedge clk or negedge res_n)begin
-	if(~res_n)begin
-		ex_mem_ALU_result[31:0] <= 32'h0000_0000;
-		ex_mem_write_data[31:0] <= 32'h0000_0000;
-		ex_mem_pc[31:0] <= 32'h0000_0000;
-		zero_flag <= 1'b0;
-		ex_mem_control[7:0] <= 8'h00;
+always @ (*)begin
+	if(~rst_n)begin
+		t_mem_ALU_result_copy[31:0] <= 32'h0000_0000;
+		t_mem_write_data_copy[31:0] <= 32'h0000_0000;
+		t_mem_pc_copy[31:0] <= 32'h0000_0000;
+		zero_reg <= 1'b0;
+		t_mem_control_copy[7:0] <= 8'h00;
+		t_mem_reg_addr_copy[4:0] <= 5'b00000;
+		pc_stop <= 1'b0;
 	end
 	else begin
-		ex_mem_pc <= input_pc + (input_imm);		// 立即数移位有疑问？？？？？
-		ex_mem_control[7:0] <= input_control;
-		ex_mem_write_data <= input_reg1;
+	    if((output_stop0 || output_stop1))begin
+	            t_mem_ALU_result_copy[31:0] <= 32'h0000_0000;
+                t_mem_write_data_copy[31:0] <= 32'h0000_0000;
+                t_mem_pc_copy[31:0] <= 32'h0000_0000;
+                zero_reg <= 1'b0;
+                t_mem_control_copy[7:0] <= 8'h00;
+                t_mem_reg_addr_copy[4:0] <= 5'b00000;
+                pc_stop <= 1'b1;
+	    end
+	    else begin
+		t_mem_pc_copy[31:0] <= input_pc[31:0] + input_imm[31:0];		// 立即数移位有疑问？？？？�?
+		t_mem_control_copy[7:0] <= input_control[7:0];
+		t_mem_write_data_copy[31:0] <= input_reg1[31:0];
+		t_mem_reg_addr_copy[4:0] <= input_reg_addr[4:0];
+		pc_stop <= 1'b0;
 		case(ALU_control)
 			4'b0010: begin
-				ex_mem_ALU_result <= input_reg0 + read_MUX; // add
+				t_mem_ALU_result_copy <= read_MUX0 + read_MUX; // add
 			end
 			4'b0110: begin
-				ex_mem_ALU_result <= input_reg0 - read_MUX; // sub
+				t_mem_ALU_result_copy <= read_MUX0 - read_MUX; // sub
 			end
 			4'b0000: begin
-				ex_mem_ALU_result <= input_reg0 & read_MUX; // and
+				t_mem_ALU_result_copy <= read_MUX0 & read_MUX; // and
 			end
 			4'b0001: begin
-				ex_mem_ALU_result <= input_reg0 | read_MUX; //or
+				t_mem_ALU_result_copy <= read_MUX0 | read_MUX; //or
 			end
 		endcase
-		if(~ex_mem_ALU_result)begin
-			zero_reg <= 1'b1;
-		end 
-		else begin
-			zero_reg <= 1'b0;
-		end
-		zero_flag <= zero_reg;
+		if(t_mem_ALU_result_copy)begin
+            zero_reg <= 1'b0;
+        end 
+        else begin
+            zero_reg <= 1'b1;
+        end
+        end
 	end
 end
+    assign zero_flag = zero_reg;
+    assign t_mem_reg_addr = t_mem_reg_addr_copy;
+    assign t_mem_control = t_mem_control_copy;
+    assign t_mem_pc = t_mem_pc_copy;
+    assign t_mem_ALU_result = t_mem_ALU_result_copy;
+    assign t_mem_write_data = t_mem_write_data_copy;
+    
 endmodule

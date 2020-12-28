@@ -22,43 +22,59 @@
 
 module IF(
 	input clk,
-	input res_n,
-	input input_pc,
+	input rst_n,
+	input[31:0] input_pc,
 	input input_PCSrc,
-	output reg[31:0] if_id,
-	output reg[31:0] if_id_pc
+	input pc_nop_control,
+	input pc_stop,
+	output[31:0] pc,
+	output reg ce
     );
-
-reg[31:0] pc;  // ç†è®ºä¸Š æœ‰ 2^30ä¸ªæŒ‡ä»¤
-
-always @(posedge clk or negedge res_n)begin		//å¤ä½
-	if(~res_n)begin
-		if_id[31:0] <= 32'h0000_0000;
-		if_id_pc[31:0] <= 32'h0000_0000;
-		//pc <= 32'h0000_0000;
-	end
-	else begin
-		/*
-		MUX MUX0(
-			clk(clk),
-			res_n(res_n),
-			input_data0(pc + 4),
-			input_data1(input_pc),
-			input_control(input_PCSrc),
-			output_data(pc)
-		);
-		*/
-		pc <= pc + 4;   // å­—èŠ‚ä¸ºå•ä½
-		if_id_pc <= pc;
-	end
+reg[31:0] pc_copy;
+reg[31:0] pc_reserve;
+reg i;
+always @(posedge clk or negedge rst_n)begin
+    if(~rst_n)begin
+        i <= 1'b0;
+        ce <= 1'b0;
+        pc_reserve[31:0] <= 32'h0000_0000;
+        pc_copy[31:0] <= 32'h0000_0000;
+     end
+     else begin
+        if(i)begin
+            pc_copy[31:0] <= 32'h0000_0000;
+            i <= 1'b0;
+        end 
+        else begin
+        i <= 1'b0;
+        ce <= 1'b1;
+        pc_reserve = pc_reserve + 4; 
+        pc_copy <= pc_reserve;
+        end
+    end
 end
-
-/* æŒ‡é’ˆå­˜å‚¨å™¨ */
-InstructionMem InstructionMem0(
-	clk(clk),
-	res_n(res_n),
-	i_addr(pc),
-	i_data(if_id),		//åœ¨æŒ‡ä»¤å­˜å‚¨å™¨ï¼Œä½¿ç”¨i_data
-	);
-
+// ÕâÓÃÉÏÉıÑØ ÒòÎª ²»¿ÉÄÜÁ¬ĞøÍ£¶ÙÁ½´Î ¿ÉÄÜÓëÉÏ±ß³åÍ»
+always @(posedge pc_stop)begin
+    pc_reserve = pc_reserve - 4;
+    pc_copy[31:0] <= pc_reserve;
+end 
+// ÕâÒ²Ò»Ñù£¬ ÒòÎª beqÖ¸Áîºó±ßÊÇnop  »á±ä³ÉµÍµçÆ½
+always @(posedge pc_nop_control)begin
+    pc_copy[31:0] <= 32'h0000_0000;
+    i <= 1'b1;
+end
+wire[31:0] pc_wire = pc_copy;
+wire[31:0] pc_;
+MUX MUX0(
+	//.clk(clk),
+	.rst_n(rst_n),
+	.input_data0(pc_wire),
+	.input_data1(input_pc),
+	.input_control(input_PCSrc),
+	.output_data(pc_)
+);
+//always @(negedge rst_n)begin		//å¤ä½
+//		pc_copy[31:0] <= 32'h0000_0000;
+//end
+assign pc = pc_;
 endmodule

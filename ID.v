@@ -23,63 +23,101 @@
 
 
 module ID(
-	input clk,
-	input res_n,
+	input rst_n,
 	input[31:0] instruction,
-	input[31:0] if_id_pc,
-	output reg[31:0] id_em_pc,
-	output reg[7:0] id_ex_control,
-	output reg[31:0] id_ex0,
-	output reg[31:0] id_ex1,
-	output reg[31:0] id_ex_imm,
-	output reg[3:0] id_ex_ALU_control
+	input[31:0] input_pc,
+	input[4:0] input_wb_single,
+	input[31:0] input_wb_data,
+	input input_wb_control,
+	output[31:0] t_ex_pc,
+	output[7:0] t_ex_control,
+	output[31:0] id0,
+	output[31:0] id1,
+	output[4:0] id0_addr,
+	output[4:0] id1_addr,
+	output[31:0] id_imm,
+	output[3:0] t_ex_ALU_control,
+	output[4:0] t_ex_reg_addr,
+	output reg pc_nop_control
 	);
-reg[7:0] temp;
-always @ (posedge clk or negedge res_n)begin
-	temp[7:0] <= instruction[7:2];			//这样赋值是否可行？  即 temp = 000 01100
-	if(~res_n)begin
-		id_ex_control <= 8'h00;
-		id_ex0 <= 32'h00000000;
-		id_ex1 <= 32'h00000000;
-		id_ex_imm <= 32'h0000_0000;
-		id_ex_ALU_control <= 4'h0;
-		id_ex_pc <= 32'h0000_0000;
+reg[6:0] temp;
+reg[31:0] t_ex_pc_copy;
+reg[7:0] t_ex_control_copy;
+reg[31:0] t_ex_ALU_control_copy;
+reg[31:0] t_ex_reg_addr_copy;
+wire[4:0] read_id0 = instruction[19:15];
+wire[4:0] read_id1 = instruction[24:20];
+assign id0_addr = read_id0;
+assign id1_addr = read_id1;
+reg reg_en;
+always @ (*)begin
+	temp[6:0] <= instruction[6:0];			//这样赋�?�是否可行？  �? temp = 000 01100
+	if(~rst_n)begin
+		t_ex_control_copy <= 8'h00;
+		t_ex_ALU_control_copy <= 4'h0;
+		t_ex_pc_copy <= 32'h0000_0000;
+		t_ex_reg_addr_copy <= 5'b00000;
+		temp <= 7'b000_0000;
+		reg_en <= 1'b0;
+		pc_nop_control <= 1'b0;
 	end
 	else begin
-		id_ex_pc <= if_id_pc;
+	    pc_nop_control <= 1'b0;
+		t_ex_pc_copy <= input_pc;
+		t_ex_reg_addr_copy[4:0] <= 5'b00000;
 		case(temp)
-			8'b00001100 :begin			//只写了 R型指令
-				id_ex_control[7:0] <= 8'b00100010;
-				id_ex_ALU_control[3:0] <= {instruction[30], instruction[14:12]};
+		    7'b0000000 :begin   //��ָ��  ���������źŶ��ǿ�
+		        t_ex_control_copy[7:0] <= 8'b0000_0000;
+		        reg_en <= 1'b0;
+		    end
+			7'b0110011 :begin			//只写�? R型指�?
+			    t_ex_reg_addr_copy[4:0] <= instruction[11:7];
+				t_ex_control_copy[7:0] <= 8'b00100010;
+				t_ex_ALU_control_copy[3:0] <= {instruction[30], instruction[14:12]};
+				reg_en <= 1'b1;
 			end
-
-
+			7'b0100011 :begin
+			    t_ex_control_copy[7:0] <= 8'b10001000;   //sd
+			    reg_en <= 1'b1;
+			end
+            7'b0000011 :begin
+                t_ex_reg_addr_copy[4:0] <= instruction[11:7];
+                t_ex_control_copy[7:0] <= 8'b11110000;
+                reg_en <= 1'b1;
+            end
+            7'b1100011 :begin //beq
+                t_ex_control_copy[7:0] <= 8'b00000101;
+                reg_en <= 1'b1;
+                pc_nop_control <= 1'b1;
+            end
 		endcase
 	end
 end
-
+assign t_ex_pc = t_ex_pc_copy;
+assign t_ex_control = t_ex_control_copy;
+assign t_ex_ALU_control = t_ex_ALU_control_copy;
+assign t_ex_reg_addr = t_ex_reg_addr_copy;
 
 /* 寄存器堆 */
 Regfile Regfile0(
-	clk(clk),
-	res_n(res_n),
-	reg_write(id_ex_control[5]),
-	//write_reg_data
-	write_reg_addr(instruction[11:7]),
-	reg_control(id_ex_control[4]),
-	read_reg0_addr(instruction[19:15]),
-	read_reg1_addr(instruction[24:20]),
-	read_reg0_data0(id_ex0),
-	read_reg1_data1(id_ex1)
+	.rst_n(rst_n),
+	.reg_en(reg_en),
+	.reg_write(input_wb_control),
+	.write_reg_data(input_wb_data),
+	.write_reg_addr(input_wb_single),
+	.reg_control(t_ex_control[4]),
+	.read_reg0_addr(read_id0),
+	.read_reg1_addr(read_id1),
+	.read_reg0_data(id0),
+	.read_reg1_data(id1)
 );
 
-/* 立即数生成单元 */
+/* 立即数生成单�? */
 ImmGen ImmGen0(
-	clk(clk),
-	res_n(res_n),
-	instruction(instruction),
-	control(temp),
-	imm(id_ex_imm)
+	.rst_n(rst_n),
+	.instruction(instruction),
+	.control(temp),
+	.imm(id_imm)
 );
 
 endmodule
