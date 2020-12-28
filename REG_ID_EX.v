@@ -27,7 +27,7 @@ module REG_ID_EX(
     input[31:0] f_id0,
     input[31:0] f_id1,
     input[31:0] f_id_imm,
-    input[3:0] f_id_ALU_control,
+    input[4:0] f_id_ALU_control,
     input[7:0] f_id_control,
     input[4:0] f_id_reg_addr,
     input[4:0] f_id0_addr,
@@ -40,7 +40,7 @@ module REG_ID_EX(
     output reg[31:0] t_ex0,
     output reg[31:0] t_ex1,
     output reg[31:0] t_ex_imm,
-    output reg[3:0] t_ex_ALU_control,
+    output reg[4:0] t_ex_ALU_control,
     output reg[7:0] t_ex_control,
     output reg[4:0] t_ex_reg_addr
     );
@@ -50,7 +50,7 @@ reg[31:0] pc_resver;
 reg[31:0] ex0_resver;
 reg[31:0] ex1_resver;
 reg[31:0] imm_resver;
-reg[3:0] ALU_control_resver;
+reg[4:0] ALU_control_resver;
 reg[7:0] control_resver;
 reg[4:0] reg_addr_resver;
 
@@ -62,14 +62,14 @@ always @(posedge clk or negedge rst_n)begin
     ex0_resver <= {32{1'b0}};
     ex1_resver <= {32{1'b0}};
     imm_resver <= {32{1'b0}};
-    ALU_control_resver <= 4'h0;
+    ALU_control_resver <= 5'b00000;
     control_resver <= 8'b00; 
     reg_addr_resver <= 5'b00000;
         t_ex_pc <= {32{1'b0}};
         t_ex0 <= {32{1'b0}};
         t_ex1 <= {32{1'b0}};
         t_ex_imm <= {32{1'b0}};
-        t_ex_ALU_control <= {4{1'b0}};
+        t_ex_ALU_control <= {5{1'b0}};
         t_ex_control <= {8{1'b0}};
         t_ex_reg_addr <= {5{1'b0}};
         t_ex0_addr <= {5{1'b0}};
@@ -83,7 +83,7 @@ always @(posedge clk or negedge rst_n)begin
                                        t_ex0 = ex0_resver[31:0];
                                        t_ex1 = ex1_resver[31:0];
                                        t_ex_imm = imm_resver[31:0];
-                                       t_ex_ALU_control = ALU_control_resver[3:0];
+                                       t_ex_ALU_control = ALU_control_resver[4:0];
                                        t_ex_control = control_resver[7:0];
                                        t_ex_reg_addr = reg_addr_resver[4:0];
         end

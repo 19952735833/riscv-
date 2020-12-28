@@ -36,14 +36,14 @@ module ID(
 	output[4:0] id0_addr,
 	output[4:0] id1_addr,
 	output[31:0] id_imm,
-	output[3:0] t_ex_ALU_control,
+	output[4:0] t_ex_ALU_control,
 	output[4:0] t_ex_reg_addr,
 	output reg pc_nop_control
 	);
 reg[6:0] temp;
 reg[31:0] t_ex_pc_copy;
 reg[7:0] t_ex_control_copy;
-reg[31:0] t_ex_ALU_control_copy;
+reg[4:0] t_ex_ALU_control_copy;
 reg[31:0] t_ex_reg_addr_copy;
 wire[4:0] read_id0 = instruction[19:15];
 wire[4:0] read_id1 = instruction[24:20];
@@ -54,7 +54,7 @@ always @ (*)begin
 	temp[6:0] <= instruction[6:0];			//杩欐牱璧嬪?兼槸鍚﹀彲琛岋紵  鍗? temp = 000 01100
 	if(~rst_n)begin
 		t_ex_control_copy <= 8'h00;
-		t_ex_ALU_control_copy <= 4'h0;
+		t_ex_ALU_control_copy <= 5'b00000;
 		t_ex_pc_copy <= 32'h0000_0000;
 		t_ex_reg_addr_copy <= 5'b00000;
 		temp <= 7'b000_0000;
@@ -73,20 +73,29 @@ always @ (*)begin
 			7'b0110011 :begin			//鍙啓浜? R鍨嬫寚浠?
 			    t_ex_reg_addr_copy[4:0] <= instruction[11:7];
 				t_ex_control_copy[7:0] <= 8'b00100010;
-				t_ex_ALU_control_copy[3:0] <= {instruction[30], instruction[14:12]};
+				t_ex_ALU_control_copy[4:0] <= {instruction[30],instruction[24], instruction[14:12]};
 				reg_en <= 1'b1;
 			end
 			7'b0100011 :begin
 			    t_ex_control_copy[7:0] <= 8'b10001000;   //sd
+			    t_ex_ALU_control_copy[4:0] <= {0,0, instruction[14:12]};
 			    reg_en <= 1'b1;
 			end
             7'b0000011 :begin
                 t_ex_reg_addr_copy[4:0] <= instruction[11:7];
                 t_ex_control_copy[7:0] <= 8'b11110000;
+                t_ex_ALU_control_copy[4:0] <= {0 , 0, instruction[14:12]};
+                reg_en <= 1'b1;
+            end
+            7'b1000011 :begin   // 我该动的i型指令
+                t_ex_reg_addr_copy[4:0] <= instruction[11:7];
+                t_ex_control_copy[7:0] <= 8'b10100010;
+                t_ex_ALU_control_copy[4:0] <= {0,0, instruction[14:12]};
                 reg_en <= 1'b1;
             end
             7'b1100011 :begin //beq
                 t_ex_control_copy[7:0] <= 8'b00000101;
+                t_ex_ALU_control_copy[4:0] <= {0,0, instruction[14:12]};
                 reg_en <= 1'b1;
                 pc_nop_control <= 1'b1;
             end

@@ -56,8 +56,7 @@ always @(*)begin  // R type
         end
     end
     end
-end 
-always @(*)begin  // I type
+
     if(input_control == 0)begin
   if(~rst_n)begin
       output_data <= {32{1'b0}};

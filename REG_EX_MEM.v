@@ -31,6 +31,10 @@ module REG_EX_MEM(
     input f_ex_zero_flag,
    // input pc_stop,
     //output reg pc_continue,
+    input[1:0] f_ex_ls,
+    input f_ex_sign_flag,
+    output reg t_mem_sign_flag,
+    output reg[1:0] t_mem_ls, 
     output reg[31:0] t_mem_pc,
     output reg[4:0] t_mem_reg_addr,
     output reg pro_control,
@@ -51,6 +55,8 @@ always @(posedge clk or negedge rst_n)begin
         t_mem_ALU_result <= {32{1'b0}};
         t_mem_write_data <= {32{1'b0}};
         t_mem_zero_flag <= 1'b0;
+        t_mem_ls <= 2'b00;
+        t_mem_sign_flag <= 1'b0;
         //pc_continue <= 1'b0;
     end
     else begin
@@ -59,6 +65,7 @@ always @(posedge clk or negedge rst_n)begin
 //        end
         
         //pc_continue <= 1'b0;
+        t_mem_sign_flag <= f_ex_sign_flag;
         pro_control <= f_ex_control[1]; //   1 Îª RÐÍÖ¸Áî  0  I type
         t_mem_pc <= f_ex_pc;
         t_mem_reg_addr <= f_ex_reg_addr;
@@ -66,6 +73,7 @@ always @(posedge clk or negedge rst_n)begin
         t_mem_ALU_result <= f_ex_ALU_result;
         t_mem_write_data <= f_ex_write_data;
         t_mem_zero_flag <= f_ex_zero_flag;
+        t_mem_ls <= f_ex_ls;
     end
 end
 endmodule

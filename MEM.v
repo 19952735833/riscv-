@@ -28,6 +28,8 @@ module MEM(
 	input[31:0] input_data,
 	input[7:0] input_control,
 	input[4:0] input_reg_addr,
+	input[1:0] input_ls,
+	input input_sign_flag,
 	output[4:0] t_wb_reg_addr, 
 	output[7:0] t_wb_control,
 	output[31:0] t_wb_memdata,
@@ -54,9 +56,15 @@ always @ (*)begin
 		t_wb_pc_copy <= input_pc;
 		t_wb_reg_addr_copy <= input_reg_addr;
 		t_wb_control_copy <= input_control;
-		if(input_control[2] && input_zero_flag)begin
+		if(input_control[2] && input_zero_flag && (input_ls == 2'b00))begin
 			PCSrc_flag_copy <= 1'b1;
 		end
+		else if(input_control[2] && ~input_zero_flag && (input_ls == 2'b01))
+		    PCSrc_flag_copy <= 1'b1;
+		else if(input_control[2] && input_sign_flag && (input_ls == 2'b10))
+		   PCSrc_flag_copy <= 1'b1;
+		else if(input_control[2] && ~input_sign_flag && (input_ls == 2'b11))
+              PCSrc_flag_copy <= 1'b1;
 		else begin
 			PCSrc_flag_copy <= 1'b0;
 		end
@@ -70,6 +78,7 @@ end
     assign PCSrc_flag = PCSrc_flag_copy;
 DataMem DataMem0(
     .rst_n(rst_n),
+    .input_ls(input_ls),
 	.input_write_flag(input_control[3]),
 	.input_read_flag(input_control[4]),
 	.input_addr(input_addr),

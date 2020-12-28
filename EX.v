@@ -27,7 +27,7 @@ module EX(
 	input[31:0] input_reg1,
 	input[31:0] input_imm,
 	input[7:0] input_control,
-	input[3:0] input_ALU_control,
+	input[4:0] input_ALU_control,
 	input[31:0] input_pc,
 	input input_pro_control,
 	input[4:0] input_reg0_addr,
@@ -37,17 +37,19 @@ module EX(
 	input[4:0] input_mempro_addr,
 	input[31:0] input_expro_data,
 	input[31:0] input_mempro_data,
+	output sign_flag,
 	output[4:0] t_mem_reg_addr,
 	output[7:0] t_mem_control,
 	output[31:0] t_mem_pc,
 	output[31:0] t_mem_ALU_result,
 	output[31:0] t_mem_write_data,
 	output zero_flag,
-	output reg pc_stop
+	output reg pc_stop,
+	output[1:0] output_ls
     );
-
+    reg sign_flag_copy;
     wire[31:0] read_MUX;	// read from MUX
-    wire[3:0] ALU_control;	//这个是翻译过来的ALU_control
+    wire[4:0] ALU_control;	//这个是翻译过来的ALU_control
     reg zero_reg;  //零标志寄存器
     reg[4:0] t_mem_reg_addr_copy;
     reg[7:0] t_mem_control_copy;
@@ -96,7 +98,8 @@ ALU_Control ALU_Control0(
 	.rst_n(rst_n),
 	.input_data(input_ALU_control),
 	.input_control(input_control[1:0]),
-	.output_data(ALU_control)
+	.output_data(ALU_control),
+	.output_l(output_ls)
 );
 
 always @ (*)begin
@@ -108,6 +111,7 @@ always @ (*)begin
 		t_mem_control_copy[7:0] <= 8'h00;
 		t_mem_reg_addr_copy[4:0] <= 5'b00000;
 		pc_stop <= 1'b0;
+		sign_flag_copy <= 1'b0;
 	end
 	else begin
 	    if((output_stop0 || output_stop1))begin
@@ -118,6 +122,7 @@ always @ (*)begin
                 t_mem_control_copy[7:0] <= 8'h00;
                 t_mem_reg_addr_copy[4:0] <= 5'b00000;
                 pc_stop <= 1'b1;
+                sign_flag_copy <= 1'b0;
 	    end
 	    else begin
 		t_mem_pc_copy[31:0] <= input_pc[31:0] + input_imm[31:0];		// 立即数移位有疑问？？？？�?
@@ -126,24 +131,48 @@ always @ (*)begin
 		t_mem_reg_addr_copy[4:0] <= input_reg_addr[4:0];
 		pc_stop <= 1'b0;
 		case(ALU_control)
-			4'b0010: begin
+			5'b00010: begin
 				t_mem_ALU_result_copy <= read_MUX0 + read_MUX; // add
 			end
-			4'b0110: begin
+			5'b00110: begin
 				t_mem_ALU_result_copy <= read_MUX0 - read_MUX; // sub
 			end
-			4'b0000: begin
+			5'b00000: begin
 				t_mem_ALU_result_copy <= read_MUX0 & read_MUX; // and
 			end
-			4'b0001: begin
+			5'b00001: begin
 				t_mem_ALU_result_copy <= read_MUX0 | read_MUX; //or
+		    end
+		    
+		    5'b00001: begin
+		        t_mem_ALU_result_copy <= read_MUX0 << read_MUX; // sll
 			end
+			5'b00101: begin
+                t_mem_ALU_result_copy <= read_MUX0 >> read_MUX; // srl
+            end
+            
+            5'b00100: begin
+                t_mem_ALU_result_copy <= read_MUX0 ^ read_MUX; // xor
+            end
+            5'b00111: begin
+                t_mem_ALU_result_copy <= read_MUX0 * read_MUX; // mul
+            end
+            5'b01000: begin
+                t_mem_ALU_result_copy <= read_MUX0 / read_MUX; // mul
+            end
+            5'b10101:begin
+                t_mem_ALU_result_copy <= read_MUX0 >> read_MUX;    //��Ҫ����
+            end
 		endcase
 		if(t_mem_ALU_result_copy)begin
             zero_reg <= 1'b0;
+            sign_flag_copy <= 1'b0;
         end 
         else begin
-            zero_reg <= 1'b1;
+        if(t_mem_ALU_result_copy == 1'b0)begin zero_reg <= 1'b1;sign_flag_copy <= 1'b0; end
+        else  begin
+           zero_reg <= 1'b0; sign_flag_copy <= 1'b1; // 1Ϊ ����
+        end
         end
         end
 	end
@@ -154,5 +183,6 @@ end
     assign t_mem_pc = t_mem_pc_copy;
     assign t_mem_ALU_result = t_mem_ALU_result_copy;
     assign t_mem_write_data = t_mem_write_data_copy;
+    assign sign_flag = sign_flag_copy;
     
 endmodule

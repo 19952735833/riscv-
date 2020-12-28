@@ -48,21 +48,30 @@ always @(posedge clk or negedge rst_n)begin
         else begin
         i <= 1'b0;
         ce <= 1'b1;
-        pc_reserve = pc_reserve + 4; 
-        pc_copy <= pc_reserve;
+        if(pc_stop)begin
+            pc_copy[31:0] = pc_reserve - 4;
+        end
+        else if(pc_nop_control)begin
+            pc_copy[31:0] = 32'h0000_0000;
+            i <= 1'b1;
+        end
+        else begin
+            pc_reserve <= pc_reserve + 4; 
+            pc_copy <= pc_reserve;
+        end
         end
     end
 end
 // 这用上升沿 因为 不可能连续停顿两次 可能与上边冲突
-always @(posedge pc_stop)begin
-    pc_reserve = pc_reserve - 4;
-    pc_copy[31:0] <= pc_reserve;
-end 
-// 这也一样， 因为 beq指令后边是nop  会变成低电平
-always @(posedge pc_nop_control)begin
-    pc_copy[31:0] <= 32'h0000_0000;
-    i <= 1'b1;
-end
+//always @(posedge pc_stop)begin
+//    pc_reserve = pc_reserve - 4;
+//    pc_copy[31:0] = pc_reserve;
+//end 
+//// 这也一样， 因为 beq指令后边是nop  会变成低电平
+//always @(posedge pc_nop_control)begin
+//    pc_copy[31:0] <= 32'h0000_0000;
+//    i <= 1'b1;
+//end
 wire[31:0] pc_wire = pc_copy;
 wire[31:0] pc_;
 MUX MUX0(

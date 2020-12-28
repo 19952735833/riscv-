@@ -22,41 +22,92 @@
 
 module ALU_Control(
 	input rst_n,
-	input[3:0] input_data,
+	input[4:0] input_data,
 	input[1:0] input_control,		// ALUop
-	output[3:0] output_data
+	output[4:0] output_data,
+	output[1:0] output_l
     );
-reg[3:0] output_data_copy;
+reg[4:0] output_data_copy;
+reg[1:0] output_ls;
 always @ (*)begin
 	if(~rst_n)begin
-		output_data_copy[3:0] <= 4'h0;
+		output_data_copy[4:0] <= 4'h0;
+		output_ls <= 2'b00;
 	end
 	else begin
 		case(input_control)
 			2'b00: begin
-				output_data_copy[3:0] <= 4'b0010;   // p175
+				output_data_copy[4:0] <= 5'b00010;   // p175
+				case(input_data)
+				    5'b00000:begin
+				        output_ls <= 2'b00; //byte
+				    end
+				    5'b00010:begin
+                        output_ls <= 2'b01;  //字
+                    end
+                    5'b00011: begin
+                        output_ls <= 2'b10;  // 双字
+                    end
+                endcase
 			end
 			2'b01: begin
-				output_data_copy[3:0] <= 4'b0110;
+				output_data_copy[4:0] <= 5'b00110;
+			case(input_data)
+				5'b00000:begin
+                    output_ls <= 2'b00; //相等跳转
+                end
+                5'b00001:begin
+                    output_ls <= 2'b01;  //不等
+                end
+                5'b00100: begin
+                    output_ls <= 2'b10;  // 小于
+                end
+                5'b00101: begin
+                    output_ls <= 2'b11;
+                end
+                
+            endcase
 			end
 			3'b10: begin
 				case(input_data)
-					4'b0000: begin
-						output_data_copy[3:0] <= 4'b0010; 	//add
+					5'b00000: begin
+						output_data_copy[4:0] <= 5'b00010; 	//add
 					end
-					4'b1000: begin
-						output_data_copy[3:0] <= 4'b0110; 	//subtract
+					5'b10000: begin
+						output_data_copy[4:0] <= 5'b00110; 	//subtract
 					end
-					4'b0111: begin
-						output_data_copy[3:0] <= 4'b0000; 	//and
+					5'b00001: begin
+					   output_data_copy[4:0] <= 5'b000011; // sll
 					end
-					4'b0110: begin
-						output_data_copy[3:0] <= 4'b0001; 	//or
+					5'b00111: begin
+						output_data_copy[4:0] <= 5'b00000; 	//and
 					end
+					5'b00110: begin
+						output_data_copy[4:0] <= 5'b00001; 	//or
+					end	
+                    5'b00101: begin
+                        output_data_copy[4:0] <= 5'b00100;  //srl
+                    end
+                    5'b00100:begin
+                        output_data_copy[4:0] <= 5'b00101; //xor
+                    end
+                    5'b01000:begin
+                        output_data_copy[4:0] <= 5'b00111; //mul
+                    end
+                   5'b01100:begin
+                       output_data_copy[4:0] <= 5'b01000; //div
+                   end
+                   5'b10101:begin
+                       output_data_copy[4:0] <= 5'b01001; //sra
+                   end
+//                   5'b10101:begin
+//                       output_data_copy[4:0] <= 5'b01001; //sra
+//                   end
 				endcase
 			end
 		endcase
 	end
 end
 assign output_data = output_data_copy;
+assign output_l = output_ls;
 endmodule

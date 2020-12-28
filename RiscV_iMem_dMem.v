@@ -46,7 +46,7 @@ wire[7:0] d_addr;
 	wire[31:0] f_id1,t_ex1;		// read data 2
 	wire[7:0] f_id_control,t_ex_control; // p179   鍥?4-18
 	wire[31:0] f_id_imm,t_ex_imm;	// imm Gen
-	wire[3:0] f_id_ALU_control,t_ex_ALU_control;   // instruction[30, 14:12]
+	wire[4:0] f_id_ALU_control,t_ex_ALU_control;   // instruction[30, 14:12]
 
     wire[4:0] f_ex_reg_addr,t_mem_reg_addr;
 	wire[31:0] f_ex_ALU_result,t_mem_ALU_result;
@@ -138,6 +138,8 @@ REG_ID_EX REG_ID_EX0(
 );
 // 有些值传递给EX等等并没有必要 如pc，直接传给流水线寄存器即可  
 wire pro_control;
+wire[1:0] output_ls,t_mem_ls;
+wire output_sign_flag, t_mem_sign_flag;
 EX EX0(   
 	.rst_n(rst_n),
 	.input_reg0(t_ex0),
@@ -154,13 +156,15 @@ EX EX0(
 	   .input_mempro_addr(wb_single),
 	   .input_expro_data(t_mem_ALU_result),
 	   .input_mempro_data(wb_data),  //数据前递,
+	.sign_flag(output_sign_flag),
 	.t_mem_reg_addr(f_ex_reg_addr),	
 	.t_mem_control(f_ex_control),								//浠巌d/ex瀵勫瓨鍣ㄨ
 	.t_mem_pc(f_ex_pc),
 	.t_mem_ALU_result(f_ex_ALU_result),
 	.t_mem_write_data(f_ex_write_data),
 	.zero_flag(f_ex_zero_flag),
-	.pc_stop(pc_stop)				//杈撳嚭鍒癳x/mem瀵勫瓨鍣?
+	.pc_stop(pc_stop),				//杈撳嚭鍒癳x/mem瀵勫瓨鍣?
+	    .output_ls(output_ls)
 );
 REG_EX_MEM REG_EX_MEM0(
     .clk(clk),
@@ -171,8 +175,12 @@ REG_EX_MEM REG_EX_MEM0(
     .f_ex_ALU_result(f_ex_ALU_result),
     .f_ex_write_data(f_ex_write_data),
     .f_ex_zero_flag(f_ex_zero_flag),
+    .f_ex_ls(output_ls),
+    .f_ex_sign_flag(output_sign_flag),
    // .pc_stop(pc_stop),
      //   .pc_continue(pc_continue),
+        .t_mem_sign_flag(t_mem_sign_flag),
+        .t_mem_ls(t_mem_ls),
         .t_mem_pc(t_mem_pc),
         .t_mem_reg_addr(t_mem_reg_addr),
         .t_mem_control(t_mem_control),
@@ -190,6 +198,8 @@ MEM MEM0(
 	.input_data(t_mem_write_data),
 	.input_control(t_mem_control),
 	.input_reg_addr(t_mem_reg_addr),
+	.input_ls(t_mem_ls),
+	.input_sign_flag(t_mem_sign_flag),
 	.t_wb_reg_addr(f_mem_reg_addr),
 	.t_wb_control(f_mem_control),
 	.t_wb_memdata(f_mem_memdata),
